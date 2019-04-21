@@ -25,9 +25,11 @@ public final class Steganographer {
     }
 
     public static BufferedImage embedMessageIntoImage(String message, BufferedImage image) {
-        byte[] msgBytes = message.getBytes();
         int imgHeight = image.getHeight(), imgWidth = image.getWidth();
-        boolean byteArrayTooLarge = msgBytes.length * (3 / 8.0) >= imgHeight * imgWidth;
+        byte[] msgBytes = message.getBytes();
+        byte[] paddedMsgBytes = new byte[(int) ((imgHeight * imgWidth) * (3 / 8.0) + 1)];
+        System.arraycopy(msgBytes, 0, paddedMsgBytes, 0, msgBytes.length);
+        boolean byteArrayTooLarge = paddedMsgBytes.length * (3 / 8.0) >= imgHeight * imgWidth;
         if (byteArrayTooLarge) throw new IllegalArgumentException("Message wont fit inside image.");
         for (int RGBcounter = 0, byteCounter = 0; RGBcounter < imgHeight * imgWidth; ) {
             // We need 8 pixels and 3 bytes to encode 24 bits per iteration
@@ -35,9 +37,9 @@ public final class Steganographer {
             for (int i = 0; i < 8; i++) {
                 rgb[i] = image.getRGB((RGBcounter + i) % imgWidth, (RGBcounter + i) / imgHeight) & 0xFFFEFEFE;
             }
-            byte byte_1 = msgBytes[byteCounter++];
-            byte byte_2 = msgBytes[byteCounter++];
-            byte byte_3 = msgBytes[byteCounter++];
+            byte byte_1 = paddedMsgBytes[byteCounter++];
+            byte byte_2 = paddedMsgBytes[byteCounter++];
+            byte byte_3 = paddedMsgBytes[byteCounter++];
 
             // 0x..../..../..../...?/0000/000./..../..../     -> change LSB of RED
             rgb[0] = rgb[0] & (((int) byte_1 & 0x80) << 9);
@@ -45,6 +47,7 @@ public final class Steganographer {
             rgb[0] = rgb[0] & (((int) byte_1 & 0x40) << 2);
             // 0x..../..../..../..../..../..../..../.00?/     -> change LSB of BLUE
             rgb[0] = rgb[0] & (((int) byte_1 & 0x20) >> 5);
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[0]);
 
             // 0x..../..../..../000?/0000/..../..../..../     -> change LSB of RED
             rgb[1] = rgb[1] & (((int) byte_1 & 0x10) << 12);
@@ -52,6 +55,7 @@ public final class Steganographer {
             rgb[1] = rgb[1] & (((int) byte_1 & 0x08) << 5);
             // 0x..../..../..../..../..../..../..00/000?/     -> change LSB of BLUE
             rgb[1] = rgb[1] & (((int) byte_1 & 0x04) >> 2);
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[1]);
 
             // 0x..../..../.000/000?/0.../..../..../..../     -> change LSB of RED
             rgb[2] = rgb[2] & (((int) byte_1 & 0x02) << 15);
@@ -59,6 +63,7 @@ public final class Steganographer {
             rgb[2] = rgb[2] & (((int) byte_1 & 0x01) << 8);
             // 0x..../..../..../..../..../..../..../...?/     -> change LSB of BLUE
             rgb[2] = rgb[2] & (((int) byte_2 & 0x80) >> 7);
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[2]);
 
             // 0x..../..../..../..0?/0000/00../..../..../     -> change LSB of RED
             rgb[3] = rgb[3] & (((int) byte_2 & 0x40) << 10);
@@ -66,6 +71,7 @@ public final class Steganographer {
             rgb[3] = rgb[3] & (((int) byte_2 & 0x20) << 3);
             // 0x..../..../..../..../..../..../..../000?/     -> change LSB of BLUE
             rgb[3] = rgb[3] & (((int) byte_2 & 0x10) >> 4);
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[3]);
 
             // 0x..../..../...0/000?/000./..../..../..../     -> change LSB of RED
             rgb[4] = rgb[4] & (((int) byte_2 & 0x08) << 13);
@@ -73,6 +79,7 @@ public final class Steganographer {
             rgb[4] = rgb[4] & (((int) byte_2 & 0x04) << 6);
             // 0x..../..../..../..../..../..../.000/000?/     -> change LSB of BLUE
             rgb[4] = rgb[4] & (((int) byte_2 & 0x02) >> 1);
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[4]);
 
             // 0x..../..../0000/000?/..../..../..../..../     -> change LSB of RED
             rgb[5] = rgb[5] & (((int) byte_2 & 0x01) << 16);
@@ -80,6 +87,7 @@ public final class Steganographer {
             rgb[5] = rgb[5] & (((int) byte_3 & 0x80) << 1);
             // 0x..../..../..../..../..../..../..../..0?/     -> change LSB of BLUE
             rgb[5] = rgb[5] & (((int) byte_3 & 0x40) >> 6);
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[5]);
 
             // 0x..../..../..../.00?/0000/0.../..../..../     -> change LSB of RED
             rgb[6] = rgb[6] & (((int) byte_3 & 0x20) << 11);
@@ -87,6 +95,7 @@ public final class Steganographer {
             rgb[6] = rgb[6] & (((int) byte_3 & 0x10) << 4);
             // 0x..../..../..../..../..../..../...0/000?/     -> change LSB of BLUE
             rgb[6] = rgb[6] & (((int) byte_3 & 0x08) >> 3);
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[6]);
 
             // 0x..../..../..00/000?/00../..../..../..../     -> change LSB of RED
             rgb[7] = rgb[7] & (((int) byte_3 & 0x04) << 14);
@@ -94,8 +103,7 @@ public final class Steganographer {
             rgb[7] = rgb[7] & (((int) byte_3 & 0x02) << 7);
             // 0x..../..../..../..../..../..../0000/000?/     -> change LSB of BLUE
             rgb[7] = rgb[7] & ((int) byte_3 & 0x01);
-
-
+            image.setRGB(RGBcounter % imgWidth, RGBcounter++ / imgHeight, rgb[7]);
         }
         return image;
     }
